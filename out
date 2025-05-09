@@ -1,0 +1,69 @@
+========== Threads: 2 ==========
+--- STRING SIZE: 100 ---
+SEQUENTIAL - Execution time: 0.000009s
+
+Score: 50
+PARALLEL - Execution time: 0.000117s
+
+Score: 50
+
+--- STRING SIZE: 500 ---
+SEQUENTIAL - Execution time: 0.000192s
+
+Score: 250
+PARALLEL - Execution time: 0.000506s
+
+Score: 250
+
+--- STRING SIZE: 1000 ---
+SEQUENTIAL - Execution time: 0.000479s
+
+Score: 500
+PARALLEL - Execution time: 0.001110s
+
+Score: 500
+
+--- STRING SIZE: 10000 ---
+SEQUENTIAL - Execution time: 0.149126s
+
+Score: 5000
+PARALLEL - Execution time: 0.178896s
+
+Score: 5000
+
+--- STRING SIZE: 100000 ---
+
+========== Threads: 4 ==========
+--- STRING SIZE: 100 ---
+SEQUENTIAL - Execution time: 0.000006s
+
+Score: 50
+PARALLEL - Execution time: 0.000979s
+
+Score: 50
+
+--- STRING SIZE: 500 ---
+SEQUENTIAL - Execution time: 0.000136s
+
+Score: 250
+PARALLEL - Execution time: 0.001244s
+
+Score: 250
+
+--- STRING SIZE: 1000 ---
+SEQUENTIAL - Execution time: 0.000453s
+
+Score: 500
+PARALLEL - Execution time: 0.002003s
+
+Score: 500
+
+--- STRING SIZE: 10000 ---
+SEQUENTIAL - Execution time: 0.070132s
+
+Score: 5000
+PARALLEL - Execution time: 0.376210s
+
+Score: 5000
+
+--- STRING SIZE: 100000 ---
