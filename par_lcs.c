@@ -3,14 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEBUGMATRIX
+
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
-int min(int a, int b) {
-    if (a < b) return a;
-    return b;
-}
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
 
 typedef unsigned short mtype;
 
@@ -78,70 +79,46 @@ void initScoreMatrix(mtype **scoreMatrix, int sizeA, int sizeB) {
     for (i = 1; i < (sizeB + 1); i++) scoreMatrix[i][0] = 0;
 }
 
-int LCS_Parallel_debug(mtype **scoreMatrix, int sizeA, int sizeB, char *seqA, char *seqB) {
-    /* sizeA++, sizeB++; */
-    printf("LCS_Parallel chamada com sizeA = %d, sizeB = %d\n", sizeA, sizeB);
-    for (int i = 0, j = 0; j <= sizeB && i <= sizeA; j++) {
-        int n = min(j, (int)sizeA - i);  // Size of the anti-diagonal
-        printf("Iteração externa: i = %d, j = %d, n = %d\n", i, j, n);
-#pragma omp parallel for
-        for (int k = 0; k <= n; ++k)  // parallel for loop for each anti-diagonal element
-        {
-            int a = i + k, b = j - k;  // for index of the diagonal elements
-            printf("  Iteração paralela (thread %d): k = %d, a = %d, b = %d\n",
-                   omp_get_thread_num(), k, a, b);
-            if (a == 0 || b == 0) {
-                scoreMatrix[a][b] = 0;
-                printf("    Caso base: scoreMatrix[%d][%d] = 0\n", a, b);
-            } else if (a > 0 && a <= sizeA && b > 0 && b <= sizeB) {
-                printf("    Acessando seqA[%d] ('%c'), seqB[%d] ('%c')\n", a - 1, seqA[a - 1],
-                       b - 1, seqB[b - 1]);
-                if (seqA[a - 1] == seqB[b - 1]) {
-                    scoreMatrix[a][b] = scoreMatrix[a - 1][b - 1] + 1;
-                    printf("    Match: scoreMatrix[%d][%d] = scoreMatrix[%d][%d] + 1 = %d\n", a, b,
-                           a - 1, b - 1, scoreMatrix[a][b]);
-                } else {
-                    scoreMatrix[a][b] = max(scoreMatrix[a - 1][b], scoreMatrix[a][b - 1]);
-                    printf(
-                        "    No Match: scoreMatrix[%d][%d] = max(scoreMatrix[%d][%d], "
-                        "scoreMatrix[%d][%d]) = %d\n",
-                        a, b, a - 1, b, a, b - 1, scoreMatrix[a][b]);
-                }
-            } else {
-                printf("    Índices fora dos limites: a = %d, b = %d, sizeA = %d, sizeB = %d\n", a,
-                       b, sizeA, sizeB);
-            }
-        }
-        if (j >= sizeB) {
-            j = sizeB - 1, i++;
-        }
-    }
-    return scoreMatrix[sizeA][sizeB];
-}
+// scoreMatrix is assumed to have (sizeB+1) rows of (sizeA+1) ints,
+// all initialized to zero in row 0 and col 0 before calling this.
+int LCS_Parallel(mtype **scoreMatrix, int sizeA, int sizeB, const char *restrict seqA,
+                 const char *restrict seqB) {
+#ifdef DEBUGMATRIX
+    printf("\nA: %s (%d)\nB: %s (%d)\n\n", seqA, sizeA, seqB, sizeB);
+#endif
 
-int LCS_Parallel(mtype **scoreMatrix, int sizeA, int sizeB, char *seqA, char *seqB) {
-    for (int i = 0, j = 0; j <= sizeB && i <= sizeA; j++) {
-        int n = min(j, (int)sizeA - i);  // Size of the anti-diagonal
-#pragma omp parallel for
-        for (int k = 0; k <= n; ++k)  // parallel for loop for each anti-diagonal element
-        {
-            int a = i + k, b = j - k;  // for index of the diagonal elements
-                                       /* if (a == 0 || b == 0) { */
-                                       /*     scoreMatrix[a][b] = 0; */
-            if (a > 0 && a <= sizeA && b > 0 && b <= sizeB) {
-                if (seqA[a - 1] == seqB[b - 1]) {
-                    scoreMatrix[a][b] = scoreMatrix[a - 1][b - 1] + 1;
-                } else {
-                    scoreMatrix[a][b] = max(scoreMatrix[a - 1][b], scoreMatrix[a][b - 1]);
-                }
+    // Loop over all anti-diagonals, d = a+b.
+    // d runs from 2 (a=1,b=1) up to sizeB+sizeA (a=sizeB,b=sizeA).
+    for (int d = 2; d <= sizeB + sizeA; ++d) {
+        // Compute legal range for 'a'
+        int a_min = d > sizeA + 1 ? (d - sizeA) : 1;
+        int a_max = (d - 1) < sizeB ? (d - 1) : sizeB;
+
+#ifdef DEBUGMATRIX
+        printf("anti-diagonal d=%d: a in [%d..%d] (n=%d)\n", d, a_min, a_max, a_max - a_min + 1);
+#endif
+
+/* #pragma omp parallel for schedule(static) */
+#pragma omp parallel for schedule(static)
+        for (int a = a_min; a <= a_max; ++a) {
+            int b = d - a;  // automatically 1 <= b <= sizeA
+#ifdef DEBUGMATRIX
+            printf("  [Thread %d] (a=%d, b=%d)\n", omp_get_thread_num(), a, b);
+#endif
+
+            // compare seqB[a-1] with seqA[b-1]
+            if (seqB[a - 1] == seqA[b - 1]) {
+                scoreMatrix[a][b] = scoreMatrix[a - 1][b - 1] + 1;
             } else {
+                // take the max of up (a-1,b) and left (a,b-1)
+                int up = scoreMatrix[a - 1][b];
+                int left = scoreMatrix[a][b - 1];
+                scoreMatrix[a][b] = (up > left ? up : left);
             }
         }
-        if (j >= sizeB) {
-            j = sizeB - 1, i++;
-        }
     }
-    return scoreMatrix[sizeA][sizeB];
+
+    return scoreMatrix[sizeB][sizeA];
 }
 
 void printMatrix(char *seqA, char *seqB, mtype **scoreMatrix, int sizeA, int sizeB) {
@@ -204,7 +181,8 @@ int main(int argc, char **argv) {
     // fill up the rest of the matrix and return final score (element locate at the last line and
     // collumn)
     double start_time = omp_get_wtime();
-    mtype score = LCS_Parallel(scoreMatrix, sizeB, sizeA, seqB, seqA);
+    /* mtype score = LCS_Parallel_debug(scoreMatrix, sizeA, sizeB, seqA, seqB); */
+    mtype score = LCS_Parallel(scoreMatrix, sizeA, sizeB, seqA, seqB);
     double end_time = omp_get_wtime();
 
     /* if you wish to see the entire score matrix,
@@ -215,7 +193,7 @@ int main(int argc, char **argv) {
 
     // print score
     printf("PARALLEL: %.6fs\n", end_time - start_time);
-    printf("Score: %d\n\n", score);
+    printf("Score: %d\n", score);
 
     // free score matrix
     freeScoreMatrix(scoreMatrix, sizeB);

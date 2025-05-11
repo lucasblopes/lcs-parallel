@@ -78,12 +78,8 @@ int LCS(mtype **scoreMatrix, int sizeA, int sizeB, char *seqA, char *seqB) {
     for (i = 1; i < sizeB + 1; i++) {
         for (j = 1; j < sizeA + 1; j++) {
             if (seqA[j - 1] == seqB[i - 1]) {
-                /* if elements in both sequences match,
-                 the corresponding score will be the score from
-                 previous elements + 1*/
                 scoreMatrix[i][j] = scoreMatrix[i - 1][j - 1] + 1;
             } else {
-                /* else, pick the maximum value (score) from left and upper elements*/
                 scoreMatrix[i][j] = max(scoreMatrix[i - 1][j], scoreMatrix[i][j - 1]);
             }
         }
@@ -158,7 +154,7 @@ int main(int argc, char **argv) {
 
     // print score
     printf("SEQUENTIAL: %.6fs\n", end_time - start_time);
-    printf("Score: %d\n\n", score);
+    printf("Score: %d\n", score);
 
     // free score matrix
     freeScoreMatrix(scoreMatrix, sizeB);

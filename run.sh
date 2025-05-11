@@ -9,19 +9,20 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# threads_list=(2 4 8 16 32)
-threads_list=(2 4 8 12 16 32)
-# threads_list=(2)
+# threads_list=(2 4 8 12 16 32)
+threads_list=(4)
 
-string_sizes=(10 50 100 1000 10000)
-# string_sizes=(1)
+# string_sizes=(10 50 100 1000 10000 50000 100000)
+string_sizes=(100)
 
 for threads in "${threads_list[@]}"; do
     echo "========== Threads: $threads =========="
 
     for size in "${string_sizes[@]}"; do
-        eval "printf '%.0sheagawghee' {1..$size}" >A.in
-        eval "printf '%.0spawheae' {1..$size}" >B.in
+        # eval "printf '%.0sheagawghee' {1..$size}" >A.in
+        # eval "printf '%.0spawheae' {1..$size}" >B.in
+        eval "printf '%.0sgxtxayb' {1..$size}" >B.in
+        eval "printf '%.0saggtab' {1..$size}" >A.in
         echo "--- STRING SIZE: $((size * 10)) ---"
         export OMP_NUM_THREADS=1
         ./lcs_seq
