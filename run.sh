@@ -35,3 +35,6 @@ for size in "${string_sizes[@]}"; do
         echo
     done
 done
+
+rm lcs_seq
+rm lcs_par

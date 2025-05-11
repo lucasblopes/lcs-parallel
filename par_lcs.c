@@ -62,21 +62,22 @@ char *read_seq(char *fname) {
     return seq;
 }
 
+// malloc matrix with simd alignment
 mtype **allocateScoreMatrix(int sizeA, int sizeB) {
-    int i;
-    // Allocate memory for LCS score matrix
     mtype **scoreMatrix = (mtype **)malloc((sizeB + 1) * sizeof(mtype *));
-    for (i = 0; i < (sizeB + 1); i++) scoreMatrix[i] = (mtype *)malloc((sizeA + 1) * sizeof(mtype));
+    for (int i = 0; i <= sizeB; ++i) {
+        if (posix_memalign((void **)&scoreMatrix[i], 64, (sizeA + 1) * sizeof(mtype)) != 0) {
+            fprintf(stderr, "Error in posix_memalign\n");
+            exit(1);
+        }
+    }
     return scoreMatrix;
 }
 
+// fill the first collumn and row with 0's using memset
 void initScoreMatrix(mtype **scoreMatrix, int sizeA, int sizeB) {
-    int i, j;
-    // Fill first line of LCS score matrix with zeroes
-    for (j = 0; j < (sizeA + 1); j++) scoreMatrix[0][j] = 0;
-
-    // Do the same for the first collumn
-    for (i = 1; i < (sizeB + 1); i++) scoreMatrix[i][0] = 0;
+    memset(scoreMatrix[0], 0, (sizeA + 1) * sizeof(mtype));
+    for (int i = 1; i <= sizeB; ++i) scoreMatrix[i][0] = 0;
 }
 
 // scoreMatrix is assumed to have (sizeB+1) rows of (sizeA+1) ints,
