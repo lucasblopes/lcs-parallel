@@ -39,7 +39,7 @@ for size in "${string_sizes[@]}"; do
             # Executar a versão paralela e redirecionar a saída
             export OMP_NUM_THREADS="$threads"
             echo "Round $run (Parallel):"
-            ./lcs_par >"$LOG_DIR/parallel_$run.log" &
+            ./lcs_par >"$LOG_DIR/parallel_$run.log"
 
             echo
         done
@@ -50,4 +50,4 @@ done
 rm lcs_seq
 rm lcs_par
 
-echo "Execuções concluídas. Os logs estão em '$LOG_ROOT/'."
+echo "Done!. Logs located in '$LOG_ROOT/'."
