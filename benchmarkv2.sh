@@ -21,7 +21,7 @@ string_sizes=(10 100 1000 10000 11000 12000 13000)
 num_runs=20
 
 # Define a pasta raiz para os logs
-LOG_ROOT="logs"
+LOG_ROOT="logsv2"
 
 for size in "${string_sizes[@]}"; do
     # Criar strings de entrada A e B
@@ -38,13 +38,12 @@ for size in "${string_sizes[@]}"; do
         echo "--- Threads: $threads ---"
 
         for run in $(seq 1 "$num_runs"); do
-            # Executar a versão paralela e redirecionar a saída
             export OMP_NUM_THREADS="$threads"
-            echo "Round $run (Parallel):"
+            echo "Round $run:"
 
-            PAR_LOG="$LOG_DIR/parallel_$run.log"
+            LOG="$LOG_DIR/$run.log"
             if check_log "$PAR_LOG"; then
-                ./lcs_par >"$PAR_LOG"
+                ./lcs_par >"$LOG"
             fi
 
             echo

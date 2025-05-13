@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUGMATRIX
-#define DEBUGSTEPS
+/* #define DEBUGMATRIX */
+/* #define DEBUGSTEPS */
 
 typedef unsigned short mtype;
 
@@ -57,6 +57,9 @@ void initScoreArray(mtype *scoreArray, int sizeA, int sizeB) {
 // Parallel LCS using anti-diagonal iteration
 int LCS_Parallel(mtype *restrict scoreArray, int sizeA, int sizeB, const char *restrict seqA,
                  const char *restrict seqB) {
+    double start_lcs = omp_get_wtime();
+    double parallel_time = 0.0;
+
 #ifdef DEBUGSTEPS
     printf("\nA: %s (%d)\nB: %s (%d)\n\n", seqA, sizeA, seqB, sizeB);
 #endif
@@ -71,6 +74,7 @@ int LCS_Parallel(mtype *restrict scoreArray, int sizeA, int sizeB, const char *r
         printf("anti-diagonal d=%d: a in [%d..%d] (n=%d)\n", d, a_min, a_max, a_max - a_min + 1);
 #endif
 
+        double start_parallel = omp_get_wtime();
 #pragma omp parallel for schedule(static)
         // The inner loop iterates through each element of the current antidiagonal parallelly
         for (int a = a_min; a <= a_max; ++a) {
@@ -88,7 +92,19 @@ int LCS_Parallel(mtype *restrict scoreArray, int sizeA, int sizeB, const char *r
                 SCORE(a, b) = up > left ? up : left;
             }
         }
+
+        double end_parallel = omp_get_wtime();
+        parallel_time += (end_parallel - start_parallel);
     }
+
+    double end_lcs = omp_get_wtime();
+    double total_lcs_time = end_lcs - start_lcs;
+    double sequential_overhead = total_lcs_time - parallel_time;
+
+    printf("Total time: %.6fs\n", total_lcs_time);
+    printf("Parallel time: %.6fs\n", parallel_time);
+    printf("Sequential time: %.6fs\n", sequential_overhead);
+
     return SCORE(sizeB, sizeA);
 }
 
@@ -133,16 +149,12 @@ int main(int argc, char **argv) {
     mtype *scoreArray = allocateScoreArray(sizeA, sizeB);
     initScoreArray(scoreArray, sizeA, sizeB);
 
-    // omp_set_num_threads(4); // adjust as needed
-    double start = omp_get_wtime();
     mtype score = LCS_Parallel(scoreArray, sizeA, sizeB, seqA, seqB);
-    double end = omp_get_wtime();
 
 #ifdef DEBUGMATRIX
     printMatrix(seqA, seqB, scoreArray, sizeA, sizeB);
 #endif
 
-    printf("PARALLEL: %.6fs\n", end - start);
     printf("Score: %d\n", score);
 
     free(scoreArray);
