@@ -9,7 +9,6 @@ check_log() {
     return 0
 }
 
-gcc -O3 -march=native -funroll-loops -flto -fopenmp seq_lcs.c -o lcs_seq
 gcc -O3 -march=native -funroll-loops -flto -fopenmp par_lcs.c -o lcs_par
 
 if [ $? -ne 0 ]; then
@@ -17,7 +16,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-threads_list=(2 4 8 12 16 32)
+threads_list=(1 2 4 8 12 16 32)
 string_sizes=(10 100 1000 10000 11000 12000 13000)
 num_runs=20
 
@@ -30,22 +29,6 @@ for size in "${string_sizes[@]}"; do
     eval "printf '%.0spawheae' {1..$size}" >B.in
 
     echo "========== STRING SIZE: $((size * 10)) =========="
-
-    LOG_DIR="$LOG_ROOT/$((size * 10))/1"
-    mkdir -p "$LOG_DIR"
-
-    for run in $(seq 1 "$num_runs"); do
-        # Executar a versão sequencial e redirecionar a saída
-        export OMP_NUM_THREADS=1
-        echo "Round $run (Sequential):"
-
-        SEQ_LOG="$LOG_DIR/sequential_$run.log"
-        if check_log "$SEQ_LOG"; then
-            ./lcs_seq >"$SEQ_LOG"
-        fi
-
-        echo
-    done
 
     for threads in "${threads_list[@]}"; do
         # Criar a pasta de logs para o tamanho da string e número de threads
@@ -70,7 +53,6 @@ for size in "${string_sizes[@]}"; do
     echo
 done
 
-rm lcs_seq
 rm lcs_par
 
 echo "Done!. Logs located in '$LOG_ROOT/'."

@@ -3,13 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b))
-#endif
-
-#ifndef min
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#endif
+#define DEBUGMATRIX
+#define DEBUGSTEPS
 
 typedef unsigned short mtype;
 
@@ -60,15 +55,31 @@ void initScoreArray(mtype *scoreArray, int sizeA, int sizeB) {
 }
 
 // Parallel LCS using anti-diagonal iteration
-int LCS_Parallel(mtype *scoreArray, int sizeA, int sizeB, const char *restrict seqA,
+int LCS_Parallel(mtype *restrict scoreArray, int sizeA, int sizeB, const char *restrict seqA,
                  const char *restrict seqB) {
-    for (int d = 2; d <= sizeA + sizeB; ++d) {
+#ifdef DEBUGSTEPS
+    printf("\nA: %s (%d)\nB: %s (%d)\n\n", seqA, sizeA, seqB, sizeB);
+#endif
+
+    // The outer loop iterates sequentially through each antidiagonal
+    int num_diag = sizeA + sizeB;  // number of antidiaginals
+    for (int d = 2; d <= num_diag; ++d) {
         int a_min = d > sizeA + 1 ? d - sizeA : 1;
         int a_max = (d - 1) < sizeB ? (d - 1) : sizeB;
 
+#ifdef DEBUGSTEPS
+        printf("anti-diagonal d=%d: a in [%d..%d] (n=%d)\n", d, a_min, a_max, a_max - a_min + 1);
+#endif
+
 #pragma omp parallel for schedule(static)
+        // The inner loop iterates through each element of the current antidiagonal parallelly
         for (int a = a_min; a <= a_max; ++a) {
             int b = d - a;
+
+#ifdef DEBUGSTEPS
+            printf("  [Thread %d] (a=%d, b=%d)\n", omp_get_thread_num(), a, b);
+#endif
+
             if (seqB[a - 1] == seqA[b - 1]) {
                 SCORE(a, b) = SCORE(a - 1, b - 1) + 1;
             } else {
@@ -83,21 +94,33 @@ int LCS_Parallel(mtype *scoreArray, int sizeA, int sizeB, const char *restrict s
 
 // Optional: print the LCS score matrix (for debugging)
 void printMatrix(const char *seqA, const char *seqB, mtype *scoreArray, int sizeA, int sizeB) {
+    int i, j;
+
+    // print header
     printf("Score Matrix:\n");
     printf("========================================\n");
+
+    // print top row (empty corner + seqA)
     printf("    ");
-    for (int j = 0; j < sizeA; ++j) printf("%5c ", seqA[j]);
+    printf("%5c   ", ' ');
+
+    for (j = 0; j < sizeA; j++) {
+        printf("%5c   ", seqA[j]);
+    }
     printf("\n");
-    for (int i = 0; i <= sizeB; ++i) {
+
+    for (i = 0; i <= sizeB; i++) {
         if (i == 0)
-            printf("   ");
+            printf("    ");
         else
-            printf("%3c", seqB[i - 1]);
-        for (int j = 0; j <= sizeA; ++j) {
-            printf("%5d ", (int)SCORE(i, j));
+            printf("%c   ", seqB[i - 1]);
+
+        for (j = 0; j <= sizeA; j++) {
+            printf("%5d   ", (int)scoreArray[i * (sizeA + 1) + j]);
         }
         printf("\n");
     }
+
     printf("========================================\n");
 }
 
@@ -127,4 +150,3 @@ int main(int argc, char **argv) {
     free(seqB);
     return EXIT_SUCCESS;
 }
-
