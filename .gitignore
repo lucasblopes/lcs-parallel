@@ -55,3 +55,4 @@ log*/
 env*/
 venv*/
 *.in
+bkp/

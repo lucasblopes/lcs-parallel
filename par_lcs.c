@@ -1,4 +1,5 @@
 #include <omp.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +40,7 @@ char *read_seq(const char *fname) {
 }
 
 // Allocate a flattened score array with SIMD-friendly alignment
-mtype *allocateScoreArray(int sizeA, int sizeB) {
+mtype *allocateScoreArray(size_t sizeA, size_t sizeB) {
     mtype *scoreArray;
     size_t total = (size_t)(sizeA + 1) * (sizeB + 1) * sizeof(mtype);
     if (posix_memalign((void **)&scoreArray, 64, total) != 0) {
@@ -50,12 +51,12 @@ mtype *allocateScoreArray(int sizeA, int sizeB) {
 }
 
 // Initialize the score array to zero
-void initScoreArray(mtype *scoreArray, int sizeA, int sizeB) {
+void initScoreArray(mtype *scoreArray, size_t sizeA, size_t sizeB) {
     memset(scoreArray, 0, (size_t)(sizeA + 1) * (sizeB + 1) * sizeof(mtype));
 }
 
 // Parallel LCS using anti-diagonal iteration
-int LCS_Parallel(mtype *restrict scoreArray, int sizeA, int sizeB, const char *restrict seqA,
+int LCS_Parallel(mtype *restrict scoreArray, size_t sizeA, size_t sizeB, const char *restrict seqA,
                  const char *restrict seqB) {
     double start_lcs = omp_get_wtime();
     double parallel_time = 0.0;
@@ -108,8 +109,8 @@ int LCS_Parallel(mtype *restrict scoreArray, int sizeA, int sizeB, const char *r
     return SCORE(sizeB, sizeA);
 }
 
-// Optional: print the LCS score matrix (for debugging)
-void printMatrix(const char *seqA, const char *seqB, mtype *scoreArray, int sizeA, int sizeB) {
+void printMatrix(const char *seqA, const char *seqB, mtype *scoreArray, size_t sizeA,
+                 size_t sizeB) {
     int i, j;
 
     // print header
@@ -143,8 +144,8 @@ void printMatrix(const char *seqA, const char *seqB, mtype *scoreArray, int size
 int main(int argc, char **argv) {
     char *seqA = read_seq("A.in");
     char *seqB = read_seq("B.in");
-    int sizeA = strlen(seqA);
-    int sizeB = strlen(seqB);
+    size_t sizeA = strlen(seqA);
+    size_t sizeB = strlen(seqB);
 
     mtype *scoreArray = allocateScoreArray(sizeA, sizeB);
     initScoreArray(scoreArray, sizeA, sizeB);

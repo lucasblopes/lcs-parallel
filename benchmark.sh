@@ -3,13 +3,12 @@
 # Função para verificar se um arquivo de log já existe e não está vazio
 check_log() {
     if [ -s "$1" ]; then
-        echo "Log '$1' already exist and is not empty. Skiping step."
+        echo "Log '$1' already exist and is not empty. Skipping step."
         return 1
     fi
     return 0
 }
 
-gcc -O3 -march=native -funroll-loops -flto -fopenmp seq_lcs.c -o lcs_seq
 gcc -O3 -march=native -funroll-loops -flto -fopenmp par_lcs.c -o lcs_par
 
 if [ $? -ne 0 ]; then
@@ -17,60 +16,63 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-threads_list=(2 4 8 12 16 32)
-string_sizes=(10 100 1000 10000 11000 12000 13000)
-num_runs=20
+threads_list=(1 2 4 8)
+initial_size=10000
+num_iterations=5
+num_runs=1
 
 # Define a pasta raiz para os logs
-LOG_ROOT="logs"
+LOG_ROOT="logsv3"
 
-for size in "${string_sizes[@]}"; do
-    # Criar strings de entrada A e B
-    eval "printf '%.0sheagawghee' {1..$size}" >A.in
-    eval "printf '%.0spawheae' {1..$size}" >B.in
+current_size_a=$initial_size
+current_size_b=$initial_size
 
-    echo "========== STRING SIZE: $((size * 10)) =========="
+echo "Iniciando o experimento com interpolação de tamanhos e strings concatenadas."
 
-    LOG_DIR="$LOG_ROOT/$((size * 10))/1"
-    mkdir -p "$LOG_DIR"
+for iter in $(seq 1 "$num_iterations"); do
+    echo "========== ITERAÇÃO: $iter =========="
 
-    for run in $(seq 1 "$num_runs"); do
-        # Executar a versão sequencial e redirecionar a saída
-        export OMP_NUM_THREADS=1
-        echo "Round $run (Sequential):"
+    # Calcular o tamanho para a concatenação (n/10)
+    size_a=$((current_size_a / 10))
+    size_b=$((current_size_b / 10))
 
-        SEQ_LOG="$LOG_DIR/sequential_$run.log"
-        if check_log "$SEQ_LOG"; then
-            ./lcs_seq >"$SEQ_LOG"
-        fi
+    # Gerar strings concatenadas de entrada A e B com os tamanhos atuais
+    eval "printf '%.0sheagawghee' {1..$size_a}" >A.in
+    eval "printf '%.0spawheae' {1..$size_b}" >B.in
 
-        echo
-    done
+    echo "Tamanho de A: $((current_size_a / 1000))k, Tamanho de B: $((current_size_b / 1000))k"
 
     for threads in "${threads_list[@]}"; do
-        # Criar a pasta de logs para o tamanho da string e número de threads
-        LOG_DIR="$LOG_ROOT/$((size * 10))/$threads"
+        # Criar a pasta de logs para o tamanho das strings e número de threads
+        SIZE_A_K=$((current_size_a / 1000))
+        SIZE_B_K=$((current_size_b / 1000))
+        LOG_DIR="$LOG_ROOT/${SIZE_A_K}k_${SIZE_B_K}k/$threads"
         mkdir -p "$LOG_DIR"
 
         echo "--- Threads: $threads ---"
 
         for run in $(seq 1 "$num_runs"); do
-            # Executar a versão paralela e redirecionar a saída
             export OMP_NUM_THREADS="$threads"
-            echo "Round $run (Parallel):"
+            echo "Round $run:"
 
-            PAR_LOG="$LOG_DIR/parallel_$run.log"
-            if check_log "$PAR_LOG"; then
-                ./lcs_par >"$PAR_LOG"
+            LOG="$LOG_DIR/$run.log"
+            if check_log "$LOG"; then
+                ./lcs_par >"$LOG"
             fi
 
             echo
         done
     done
     echo
+
+    # Intercalar o aumento dos tamanhos
+    if ((iter % 2 == 1)); then
+        current_size_b=$((current_size_b * 2))
+    else
+        current_size_a=$((current_size_a * 2))
+    fi
 done
 
-rm lcs_seq
 rm lcs_par
 
 echo "Done!. Logs located in '$LOG_ROOT/'."
