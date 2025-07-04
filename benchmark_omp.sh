@@ -22,7 +22,7 @@ num_iterations=5
 num_runs=1
 
 # Define a pasta raiz para os logs
-LOG_ROOT="logsv3"
+LOG_ROOT="logsomp"
 
 current_size_a=$initial_size
 current_size_b=$initial_size

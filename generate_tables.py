@@ -10,7 +10,7 @@ from tabulate import tabulate
 import seaborn as sns
 from pathlib import Path
 
-DIR = "logsx"
+DIR = "logsmpi"
 
 
 class LCSLogProcessor:
@@ -18,40 +18,47 @@ class LCSLogProcessor:
         # Configurações que podem ser facilmente modificadas
         self.string_sizes = [
             "10k_10k",
-            "10k_20k",
             "20k_20k",
-            "20k_40k",
+            "30k_30k",
             "40k_40k",
-            "40k_80k",
-            "80k_80k",
-            "80k_160k",
         ]
-        self.thread_counts = [1, 2, 4, 8]
-        self.num_runs = 2
+        self.thread_counts = [1, 2, 4, 6]
+        self.num_runs = 50
         self.base_dir = f"./{DIR}/"
         self.results = {}
 
     def extract_data_from_log(self, log_file):
-        """Extrai os dados de tempo e score de um arquivo de log."""
+        """Extrai os dados de tempo e score de um arquivo de log com formato novo."""
         try:
-            with open(log_file, "r") as f:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
-            total_time = float(re.search(r"Total time: (\d+\.\d+)s", content).group(1))
-            parallel_time = float(
-                re.search(r"Parallel time: (\d+\.\d+)s", content).group(1)
-            )
-            sequential_time = float(
-                re.search(r"Sequential time: (\d+\.\d+)s", content).group(1)
-            )
-            score = int(re.search(r"Score: (\d+)", content).group(1))
+            # Detecta se o tempo é PARALLEL ou SEQUENTIAL
+            time_match = re.search(r"(PARALLEL|SEQUENTIAL): (\d+\.\d+)s", content)
+            score_match = re.search(r"Score: (\d+)", content)
 
-            return {
-                "total_time": total_time,
-                "parallel_time": parallel_time,
-                "sequential_time": sequential_time,
-                "score": score,
-            }
+            if not (time_match and score_match):
+                raise ValueError("Formato inesperado no log.")
+
+            mode = time_match.group(1)
+            time_value = float(time_match.group(2))
+            score = int(score_match.group(1))
+
+            if mode == "PARALLEL":
+                return {
+                    "total_time": time_value,
+                    "parallel_time": time_value,
+                    "sequential_time": 0.0,
+                    "score": score,
+                }
+            else:  # SEQUENTIAL
+                return {
+                    "total_time": time_value,
+                    "parallel_time": 0.0,
+                    "sequential_time": time_value,
+                    "score": score,
+                }
+
         except Exception as e:
             print(f"Erro ao processar arquivo {log_file}: {e}")
             return None

@@ -54,5 +54,6 @@ dkms.conf
 log*/
 env*/
 venv*/
+/bin
 *.in
 bkp/

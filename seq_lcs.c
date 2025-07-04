@@ -1,10 +1,13 @@
-#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #ifndef max
 #define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
+#ifndef min
+#define min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 typedef unsigned short mtype;
@@ -127,8 +130,8 @@ int main(int argc, char **argv) {
     int sizeA, sizeB;
 
     // read both sequences
-    seqA = read_seq("A.in");
-    seqB = read_seq("B.in");
+    seqA = read_seq(argv[1]);
+    seqB = read_seq(argv[2]);
 
     // find out sizes
     sizeA = strlen(seqA);
@@ -142,9 +145,7 @@ int main(int argc, char **argv) {
 
     // fill up the rest of the matrix and return final score (element locate at the last line and
     // collumn)
-    double start_time = omp_get_wtime();
     mtype score = LCS(scoreMatrix, sizeA, sizeB, seqA, seqB);
-    double end_time = omp_get_wtime();
 
     /* if you wish to see the entire score matrix,
      for debug purposes, define DEBUGMATRIX. */
@@ -152,8 +153,8 @@ int main(int argc, char **argv) {
     printMatrix(seqA, seqB, scoreMatrix, sizeA, sizeB);
 #endif
 
-    // print score
-    printf("SEQUENTIAL: %.6fs\n", end_time - start_time);
+    // print score and time to compute
+    /* printf("SEQUENTIAL: %.6fs\n", end_time - start_time); */
     printf("Score: %d\n", score);
 
     // free score matrix

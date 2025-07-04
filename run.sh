@@ -19,6 +19,7 @@ for size in "${string_sizes[@]}"; do
     # eval "printf '%.0spawheae' {1..$size}" >B.in
     eval "printf '%.0sgxtxayb' {1..$size}" >B.in
     eval "printf '%.0saggtab' {1..$size}" >A.in
+
     echo "========== STRING SIZE: $((size * 10)) =========="
 
     for threads in "${threads_list[@]}"; do
